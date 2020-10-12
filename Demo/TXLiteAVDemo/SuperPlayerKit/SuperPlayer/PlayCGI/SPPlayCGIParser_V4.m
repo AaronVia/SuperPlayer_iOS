@@ -26,19 +26,7 @@
             ret.name = [media valueForKeyPath:@"basicInfo.name"];
             NSDictionary *streamInfo = [media valueForKeyPath:@"streamingInfo.plainOutput"];
             if (streamInfo == nil) {
-                NSArray* drmOutputs = [media valueForKeyPath:@"streamingInfo.drmOutput"];
-                for (NSDictionary *drmOutput in drmOutputs) {
-                    SPDrmType type = [SPPlayCGIParseResult drmTypeFromString:J2Str(drmOutput[@"type"])];
-                    if (type == SPDrmTypeSimpleAES) {
-                        streamInfo = drmOutput;
-                        ret.drmType = SPDrmTypeSimpleAES;
-                        break;
-                    }
-                }
-                ret.drmToken = [media valueForKeyPath:@"streamingInfo.drmToken"];
-            }
-            if (streamInfo == nil) {
-                return nil;
+                break;
             }
             NSNumber *duration = [media valueForKeyPath:@"basicInfo.duration"];
             if ([duration isKindOfClass:[NSNumber class]]) {

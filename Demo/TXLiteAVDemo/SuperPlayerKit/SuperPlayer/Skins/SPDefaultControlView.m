@@ -17,7 +17,8 @@
 
 #define MODEL_TAG_BEGIN 20
 #define BOTTOM_IMAGE_VIEW_HEIGHT 50
-
+//点击清晰度
+NSString *const kNotificationClickResolution = @"notification.click.resolution";
 @interface SPDefaultControlView () <UIGestureRecognizerDelegate, PlayerSliderDelegate>
 @property BOOL isLive;
 @end
@@ -211,7 +212,7 @@
         self.backLiveBtn.hidden = self.isLockScreen;
     }
     [self.delegate controlViewLockScreen:self withLock:self.isLockScreen];
-    [self fadeOut:3];
+    [self fadeOut:5];
 }
 
 - (void)playBtnClick:(UIButton *)sender {
@@ -228,18 +229,18 @@
     sender.selected = !sender.selected;
     self.fullScreen = !self.fullScreen;
     [self.delegate controlViewChangeScreen:self withFullScreen:YES];
-    [self fadeOut:3];
+    [self fadeOut:5];
 }
 
 
 - (void)captureBtnClick:(UIButton *)sender {
     [self.delegate controlViewSnapshot:self];
-    [self fadeOut:3];
+    [self fadeOut:5];
 }
 
 - (void)danmakuBtnClick:(UIButton *)sender {
     sender.selected = !sender.selected;
-    [self fadeOut:3];
+    [self fadeOut:5];
 }
 
 - (void)moreBtnClick:(UIButton *)sender {
@@ -275,6 +276,8 @@
 }
 
 - (void)resolutionBtnClick:(UIButton *)sender {
+    [[NSNotificationCenter defaultCenter] postNotificationName:(NSString *)kNotificationClickResolution object:nil];
+    
     self.topImageView.hidden = YES;
     self.bottomImageView.hidden = YES;
     self.lockBtn.hidden = YES;
@@ -670,7 +673,7 @@
     if (x + self.pointJumpBtn.mm_h/2 > ScreenWidth)
         x = ScreenWidth - self.pointJumpBtn.mm_h/2;
     self.pointJumpBtn.tag = [self.videoSlider.pointArray indexOfObject:point];
-    self.pointJumpBtn.m_left(x).m_bottom(60);
+    self.pointJumpBtn.mm_left(x).mm_bottom(60);
     self.pointJumpBtn.hidden = NO;
     
     [DataReport report:@"player_point" param:nil];

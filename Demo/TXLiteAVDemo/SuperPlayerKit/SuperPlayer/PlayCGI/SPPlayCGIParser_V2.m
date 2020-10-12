@@ -9,7 +9,6 @@
 #import "SPPlayCGIParser_V2.h"
 #import "J2Obj.h"
 #import "SuperPlayerUrl.h"
-#import "TXBitrateItemHelper.h"
 #import "TXImageSprite.h"
 
 @implementation SPPlayCGIParser_V2

@@ -6,6 +6,7 @@
 //
 
 #import "SuperPlayerControlView.h"
+extern const NSString *const kNotificationClickResolution;
 
 @interface SPDefaultControlView : SuperPlayerControlView
 

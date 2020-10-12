@@ -15,6 +15,7 @@
     self = [super init];
     
     self.holder = [[UIControl alloc] initWithFrame:CGRectMake(0, 0, 30, 30)];
+    //    view.backgroundColor = [UIColor yellowColor];
     UIView *inter = [[UIView alloc] initWithFrame:CGRectMake(14, 14, 2, 2)];
     inter.backgroundColor = [UIColor whiteColor];
     [self.holder addSubview:inter];
@@ -58,7 +59,6 @@
     [self addSubview:_progressView];
     
     self.pointArray = [NSMutableArray new];
-    
     self.maximumValue = 1;
     self.maximumTrackTintColor = [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.5];
     

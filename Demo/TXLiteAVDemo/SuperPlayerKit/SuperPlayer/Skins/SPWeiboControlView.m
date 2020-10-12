@@ -268,7 +268,7 @@
 {
     sender.selected = self.playerConfig.mute = !self.playerConfig.mute;
     [self.delegate controlViewConfigUpdate:self withReload:NO];
-    [self fadeOut:3];
+    [self fadeOut:5];
 }
 
 
@@ -340,7 +340,7 @@
     [self setPlayState:isPlaying];
 
     _resolutionArray = resolutionNames;
-    NSAssert(currentResolutionIndex < resolutionNames.count,
+    NSAssert(resolutionNames == nil || currentResolutionIndex < resolutionNames.count,
              @"Invalid argument when reseeting %@", NSStringFromClass(self.class));
     if (resolutionNames.count > 0) {
         [self.resolutionBtn setTitle:resolutionNames[currentResolutionIndex]
@@ -479,7 +479,7 @@
     if (x + self.pointJumpBtn.mm_w/2 > ScreenWidth)
         x = ScreenWidth - self.pointJumpBtn.mm_w/2;
     self.pointJumpBtn.tag = [self.videoSlider.pointArray indexOfObject:point];
-    self.pointJumpBtn.m_left(x).m_bottom(60);
+    self.pointJumpBtn.mm_left(x).mm_bottom(60);
     self.pointJumpBtn.hidden = NO;
     
     [DataReport report:@"player_point" param:nil];

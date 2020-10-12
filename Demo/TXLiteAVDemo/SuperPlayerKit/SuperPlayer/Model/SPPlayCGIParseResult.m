@@ -10,10 +10,4 @@
 #import "TXImageSprite.h"
 
 @implementation SPPlayCGIParseResult
-+ (SPDrmType)drmTypeFromString:(NSString *)typeString {
-    if ([typeString isEqualToString: @"SimpleAES"]) {
-        return SPDrmTypeSimpleAES;
-    }
-    return SPDrmTypeNone;
-}
 @end

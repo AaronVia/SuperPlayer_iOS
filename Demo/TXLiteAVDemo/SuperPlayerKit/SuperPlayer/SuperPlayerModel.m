@@ -7,8 +7,6 @@
 #import "SuperPlayerModelInternal.h"
 
 const NSString *kPlayCGIHostname = @"playvideo.qcloud.com";
-NSString * const kErrorDomain = @"SuperPlayerCGI";
-const NSInteger kInvalidResponseErrorCode = -100;
 
 @implementation SuperPlayerVideoId
 @end
@@ -26,8 +24,7 @@ const NSInteger kInvalidResponseErrorCode = -100;
 }
 
 - (void)dealloc {
-//    [_sessionManager invalidateSessionCancelingTasks:YES];
-    [_sessionManager invalidateSessionCancelingTasks:YES resetSession:NO];
+    [_sessionManager invalidateSessionCancelingTasks:YES resetSession:YES];
 }
 
 - (NSString *)playingDefinitionUrl
@@ -65,7 +62,7 @@ const NSInteger kInvalidResponseErrorCode = -100;
 {
     NSMutableArray *array = @[].mutableCopy;
     for (int i = 0; i < self.multiVideoURLs.count; i++) {
-        [array addObject:self.multiVideoURLs[i].title ?: @""];
+        [array addObject:self.multiVideoURLs[i].title];
     }
     return array;
 }
@@ -90,11 +87,13 @@ const NSInteger kInvalidResponseErrorCode = -100;
 
     // 防盗链参数
     NSDictionary *params = [self _buildParams];
-
-    __weak SuperPlayerModel *weakSelf = self;
     
-    return [manager GET:url parameters:params headers:nil progress:nil
-         success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+    __weak SuperPlayerModel *weakSelf = self;
+    return [manager GET:url
+             parameters:params
+                headers:nil
+               progress:nil
+                success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         __strong SuperPlayerModel *self = weakSelf;
 #if DEBUG
         NSLog(@"%@", responseObject);
@@ -104,7 +103,7 @@ const NSInteger kInvalidResponseErrorCode = -100;
             NSString *msg = responseObject[@"message"];
             NSString *requestID = responseObject[@"requestId"];
             NSString *warning = responseObject[@"warning"];
-            NSError *error = [NSError errorWithDomain:kErrorDomain
+            NSError *error = [NSError errorWithDomain:@"SuperPlayerCGI"
                                                  code:code
                                              userInfo:@{NSLocalizedDescriptionKey: msg,
                                                         @"requestID": requestID ?: @"",
@@ -123,22 +122,12 @@ const NSInteger kInvalidResponseErrorCode = -100;
         }
         Class<SPPlayCGIParserProtocol> parser = [SPPlayCGIParser parserOfVersion:responseVersion];
         SPPlayCGIParseResult *result = [parser parseResponse:responseObject];
-        if (result == nil) {
-            if (completion) {
-                NSError *error = [NSError errorWithDomain:kErrorDomain
-                                                     code:kInvalidResponseErrorCode
-                                                 userInfo:@{NSLocalizedDescriptionKey:@"Invalid response."}];
-                completion(error, self);
-            }
-            return;
-        }
+        
         self.videoURL = result.url;
         self.multiVideoURLs = result.multiVideoURLs;
         self.keyFrameDescList = result.keyFrameDescList;
         self.imageSprite = result.imageSprite;
-
         if (responseVersion == 4) {
-            self.drmToken = result.drmToken;
             self.originalDuration = result.originalDuration;
         }
         if (completion) {

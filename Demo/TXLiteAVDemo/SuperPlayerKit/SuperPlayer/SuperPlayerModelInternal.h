@@ -46,9 +46,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSURLSessionTask *)requestWithCompletion:
         (void(^)(NSError *err, SuperPlayerModel *model))completion;
 
-/// DRM Token
-@property (strong, nonatomic) NSString *drmToken;
-
 @end
 
 NS_ASSUME_NONNULL_END

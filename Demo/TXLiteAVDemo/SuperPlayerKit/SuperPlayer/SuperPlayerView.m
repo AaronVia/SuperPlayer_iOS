@@ -12,33 +12,7 @@
 #import "UIView+MMLayout.h"
 #import "SPDefaultControlView.h"
 #import "SuperPlayerModelInternal.h"
-// TODO: 处理头部引用
-#import "TXAudioCustomProcessDelegate.h"
-#import "TXAudioRawDataDelegate.h"
-#import "TXBitrateItem.h"
-#import "TXImageSprite.h"
-#import "TXLiteAVCode.h"
-#import "TXLiveAudioSessionDelegate.h"
-#import "TXLiveBase.h"
-#import "TXLivePlayConfig.h"
-#import "TXLivePlayListener.h"
-#import "TXLivePlayer.h"
-#import "TXLiveRecordListener.h"
-#import "TXLiveRecordTypeDef.h"
-#import "TXLiveSDKEventDef.h"
-#import "TXLiveSDKTypeDef.h"
-#import "TXPlayerAuthParams.h"
-#ifdef ENABLE_UGC
-#import "TXUGCBase.h"
-#import "TXUGCPartsManager.h"
-#import "TXUGCRecord.h"
-#import "TXUGCRecordListener.h"
-#import "TXUGCRecordTypeDef.h"
-#endif
-#import "TXVideoCustomProcessDelegate.h"
-#import "TXVodPlayConfig.h"
-#import "TXVodPlayListener.h"
-#import "TXVodPlayer.h"
+#import "TXLiteAVSDK.h"
 
 static UISlider * _volumeSlider;
 
@@ -49,14 +23,14 @@ static UISlider * _volumeSlider;
 #pragma clang diagnostic ignored"-Wdeprecated-declarations"
 
 
-
-
-@implementation SuperPlayerView {
+@interface SuperPlayerView() <TXVodPlayListener, TXLivePlayListener, TXLiveBaseDelegate> {
     UIView *_fullScreenBlackView;
     SuperPlayerControlView *_controlView;
     NSURLSessionTask *_currentLoadingTask;
 }
+@end
 
+@implementation SuperPlayerView
 
 #pragma mark - life Cycle
 
@@ -169,7 +143,6 @@ static UISlider * _volumeSlider;
     LOG_ME;
     self.isShiftPlayback = NO;
     self.imageSprite = nil;
-    self.originalDuration = 0;
     [self reportPlay];
     self.reportTime = [NSDate date];
     [self _removeOldPlayer];
@@ -360,10 +333,9 @@ static UISlider * _volumeSlider;
     self.isLoaded = NO;
     
     self.netWatcher.playerModel = self.playerModel;
-    //时移播放需要原始分辨率播放流地址
-//    if (self.playerModel.playingDefinition == nil) {
-//        self.playerModel.playingDefinition = self.netWatcher.adviseDefinition;
-//    }
+    if (self.playerModel.playingDefinition == nil) {
+        self.playerModel.playingDefinition = self.netWatcher.adviseDefinition;
+    }
     NSString *videoURL = self.playerModel.playingDefinitionUrl;
     
     if (self.isLive) {
@@ -402,7 +374,7 @@ static UISlider * _volumeSlider;
             config.maxCacheItems = (int)self.playerConfig.maxCacheItem;
         }
         config.progressInterval = 0.02;
-        self.vodPlayer.token = self.playerModel.drmToken;
+        self.vodPlayer.token = nil;
 //        if (_playerModel.videoId.version == FileIdV3) {
 //            if ([_playerModel.drmType isEqualToString:kDrmType_FairPlay]) {
 //                config.certificate = self.playerModel.certificate;
@@ -539,7 +511,7 @@ static UISlider * _volumeSlider;
         return;
     }
     _isFullScreen = fullScreen;
-    [self.fatherView.viewController setNeedsStatusBarAppearanceUpdate];
+    [self.fatherView.mm_viewController setNeedsStatusBarAppearanceUpdate];
 
     UIDeviceOrientation targetOrientation = [self _orientationForFullScreen:fullScreen];// [UIDevice currentDevice].orientation;
 
@@ -714,13 +686,15 @@ static UISlider * _volumeSlider;
  *  @param gesture UITapGestureRecognizer
  */
 - (void)doubleTapAction:(UIGestureRecognizer *)gesture {
-    if (self.playDidEnd) { return;  }
-    // 显示控制层
-    [self.controlView fadeShow];
-    if (self.isPauseByUser) {
-        [self resume];
-    } else {
-        [self pause];
+    if (!self.isLockScreen) {
+        if (self.playDidEnd) { return;  }
+        // 显示控制层
+        //[self.controlView fadeShow];
+        if (self.isPauseByUser) {
+            [self resume];
+        } else {
+            [self pause];
+        }
     }
 }
 
@@ -1311,6 +1285,8 @@ static UISlider * _volumeSlider;
             [self.vodPlayer startPlay:url];
         }
     }
+    
+    controlView.hidden = YES;
 }
 
 - (void)controlViewConfigUpdate:(SuperPlayerView *)controlView withReload:(BOOL)reload {
@@ -1465,9 +1441,9 @@ static UISlider * _volumeSlider;
             [self layoutSubviews];  // 防止横屏状态下添加view显示不全
             self.state = StatePlaying;
 
-//            if (self.playerModel.playDefinitions.count == 0) {
+            if (self.playerModel.playDefinitions.count == 0) {
                 [self updateBitrates:player.supportedBitrates];
-//            }
+            }
             for (SPVideoFrameDescription *p in self.keyFrameDescList) {
                 if (player.duration > 0)
                     p.where = p.time/duration;
@@ -1532,9 +1508,22 @@ static UISlider * _volumeSlider;
 //            }
             
             if (EvtID == PLAY_ERR_NET_DISCONNECT) {
-                [self showMiddleBtnMsg:kStrBadNetRetry withAction:ActionContinueReplay];
+                NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:kStrBadNetRetry];
+                [string addAttributes:@{NSFontAttributeName: [UIFont fontWithName:@"PingFangSC-Regular" size: 16],NSForegroundColorAttributeName:[UIColor whiteColor]} range:NSMakeRange(0, string.string.length)];
+                
+                NSRange range = [kStrBadNetRetry rangeOfString:@"点击重试"];
+                if (range.location != NSNotFound) {
+                    [string addAttributes:@{NSFontAttributeName: [UIFont fontWithName:@"PingFangSC-Regular" size: 16],NSForegroundColorAttributeName:[UIColor colorWithRed:255./255. green:153./255. blue:77./255. alpha:1.]} range:NSMakeRange(range.location, 4)];
+                }
+                [self showMiddleBtnAttriMsg:string withAction:ActionContinueReplay];
             } else {
-                [self showMiddleBtnMsg:kStrLoadFaildRetry withAction:ActionRetry];
+                NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:kStrBadNetRetry];
+                [string addAttributes:@{NSFontAttributeName: [UIFont fontWithName:@"PingFangSC-Regular" size: 16],NSForegroundColorAttributeName:[UIColor whiteColor]} range:NSMakeRange(0, string.string.length)];
+                NSRange range = [kStrLoadFaildRetry rangeOfString:@"点击重试"];
+                if (range.location != NSNotFound) {
+                    [string addAttributes:@{NSFontAttributeName: [UIFont fontWithName:@"PingFangSC-Regular" size: 16],NSForegroundColorAttributeName:[UIColor colorWithRed:255./255. green:144./255. blue:77./255. alpha:1.]} range:NSMakeRange(range.location, 4)];
+                }
+                [self showMiddleBtnAttriMsg:string withAction:ActionContinueReplay];
             }
             self.state = StateFailed;
             [player stopPlay];
@@ -1682,6 +1671,7 @@ static UISlider * _volumeSlider;
     return playType;
 }
 
+
 - (void)reportPlay {
     if (self.reportTime == nil)
         return;
@@ -1724,6 +1714,18 @@ static UISlider * _volumeSlider;
     
     [self.middleBlackBtn mas_updateConstraints:^(MASConstraintMaker *make) {
         make.width.equalTo(@(width+10));
+    }];
+    [self.middleBlackBtn fadeShow];
+}
+
+- (void)showMiddleBtnAttriMsg:(NSAttributedString *)msg withAction:(ButtonAction)action {
+    [self.middleBlackBtn setAttributedTitle:msg forState:UIControlStateNormal];
+    self.middleBlackBtn.titleLabel.attributedText = msg;
+    self.middleBlackBtnAction = action;
+    CGFloat width = self.middleBlackBtn.titleLabel.attributedText.size.width;
+    
+    [self.middleBlackBtn mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.equalTo(@(width+30));
     }];
     [self.middleBlackBtn fadeShow];
 }

@@ -36,11 +36,7 @@
         bizId = [[_url host] componentsSeparatedByString:@"."].firstObject;
     }
 
-    NSInteger bizIdNum = [bizId integerValue];
-    if (bizIdNum <= 0) {
-        bizIdNum = -1;
-    }
-    return bizIdNum;
+    return [bizId integerValue];
 }
 
 @end
